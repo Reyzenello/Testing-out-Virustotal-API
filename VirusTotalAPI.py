@@ -1,44 +1,45 @@
 import requests
 import json
-import time
 
 # Your VirusTotal API key
-API_KEY = 'your_Virustotal'
 
-# VirusTotal API URLs
-IP_SCAN_URL = 'https://www.virustotal.com/api/v3/ip_addresses/{}'
+API_KEY = 'YOUR_API_KEY'
+FILE_PATH = 'your-file-path -> .txt'
 
-# Function to get the report of an IP address from VirusTotal
-def get_ip_report(ip_address):
+def get_ip_report(ip):
+    url = f'https://www.virustotal.com/api/v3/ip_addresses/{ip}'
     headers = {
         'x-apikey': API_KEY
     }
-    response = requests.get(IP_SCAN_URL.format(ip_address), headers=headers)
+    response = requests.get(url, headers=headers)
+    return response.json()
+
+def print_ip_report(ip_report):
+    data = ip_report.get('data', {})
+    attributes = data.get('attributes', {})
     
-    if response.status_code == 200:
-        return response.json()
-    else:
-        print(f"Error: {response.status_code}")
-        print(response.json())
-        return None
+    ip = data.get('id', 'N/A')
+    country = attributes.get('country', 'N/A')
+    score = attributes.get('last_analysis_stats', {}).get('malicious', 'N/A')
+    description = 'N/A'
+    if 'crowdsourced_context' in attributes and attributes['crowdsourced_context']:
+        description = attributes['crowdsourced_context'][0].get('details', 'N/A')
 
-# Main function
+    print(f"IP: {ip}")
+    print(f"Score: {score}")
+    print(f"Description: {description}")
+    print(f"Country: {country}")
+    print("=" * 40)
+
 def main():
-    file_path = r'your_path_file -> malicious-ip.txt'  # Change this to the path of the file you want to scan
-
-    with open(file_path, 'r') as file:
-        ip_addresses = file.readlines()
-
-    for ip in ip_addresses:
+    with open(FILE_PATH, 'r') as file:
+        ips = file.readlines()
+    
+    for ip in ips:
         ip = ip.strip()
-        if ip:
-            print(f"Analyzing IP: {ip}")
-            report = get_ip_report(ip)
-            if report:
-                print(json.dumps(report, indent=4))
-            else:
-                print(f"Failed to retrieve the report for IP: {ip}")
-            time.sleep(15)  # Respect the API rate limit
+        print(f"Analyzing IP: {ip}")
+        ip_report = get_ip_report(ip)
+        print_ip_report(ip_report)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
